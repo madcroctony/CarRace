@@ -9,6 +9,8 @@ const app = express();
 const server = http.Server(app);
 const io = socketIO(server);
 
+
+/*
 const FIELD_WIDTH = 1000, FIELD_HEIGHT = 1000;
 class GameObject{
     constructor(obj={}){
@@ -28,6 +30,7 @@ class GameObject{
             angle: this.angle, select: this.select};
     }
 };
+*/
 
 /*
 class Player extends GameObject{
