@@ -5,7 +5,7 @@ Node.jsのフレームワークで作成しています。
 npm init ➡ npm install express --save ➡ npm install socket.io
 と入力をおこない，プロジェクトの作成しました。
 ステージや車のモデルはBlenderで作成し，<br>
-BGMはOtoLogic（https://otologic.jp/） 様のものを使用させていただきました。<br>
+BGMはOtoLogic（ https://otologic.jp/ ） 様のものを使用させていただきました。<br>
 また，Three.jsについては，Paiza様の開発日誌（https://paiza.hatenablog.com/entry/paizacloud_online_multiplayer_game）
 を参考にさせていただきました。
 
