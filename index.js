@@ -29,6 +29,7 @@ class GameObject{
     }
 };
 
+/*
 class Player extends GameObject{
     constructor(obj={}){
         super(obj);
@@ -48,13 +49,13 @@ class Player extends GameObject{
         this.y = 0;
         this.angle = 0;
         this.z = 0;
-        /*
+        
         do{
             this.x = 0;
             this.y = 0;
             this.angle = 0;
         }while(this.intersectWalls());
-        */
+        
     }
 
     toJSON(){
@@ -62,6 +63,7 @@ class Player extends GameObject{
             socketId: this.socketId, point: this.point, kill:this.kill, nickname: this.nickname, sector: this.sector});
     }
 };
+*/
 
 let players = {};
 
@@ -80,9 +82,11 @@ io.on('connection', function(socket) {
     });
 
     socket.on('disconnect', () => {
+        /*
         if(!player){return;}
         delete players[player.id];
         player = null;
+        */
     });
 });
 
