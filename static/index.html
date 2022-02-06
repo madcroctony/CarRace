@@ -187,6 +187,7 @@
     let sample4_model;
     let sample4_loader;
 
+    //ホーム画面での車のモデルの読み込み
     function init(){
         sample0 = new THREE.Group();
         scene.add(sample0);
@@ -303,7 +304,7 @@
         let line_geometry;
         let line_mesh;
 
-        //glbファイルの読み込み
+        //floorモデルの読み込み
         const floor_loader = new GLTFLoader();
         floor_loader.load('static/floor.glb', function(gltf) {
             floor_model = gltf.scene;
@@ -321,7 +322,7 @@
         course = new THREE.Group();
         scene.add(course);
             
-        //glbファイルの読み込み
+        //コースモデルの読み込み
         const course_loader = new GLTFLoader();
         course_loader.load('static/course.glb', function(gltf) {
             course_model = gltf.scene;
@@ -414,8 +415,9 @@
     
     animate();
 
-    let bgm = new Audio("static/NES-Shooter-C04-1(Stage3).mp3");
-    let bgm2 = new Audio("static/NES-Shooter-C07-1(Clear1).mp3");
+    //bgmの読み込み
+    let bgm = new Audio("static/bgm.mp3");
+    let bgm2 = new Audio("static/bgm2.mp3");
 
     let mycar_select;
 
@@ -482,17 +484,16 @@
         update();
     }
 
+    //ステージ上での車のモデル（プレイヤー）の読み込み
     function initMycar()
     {
         car = new THREE.Group();
         scene.add(car);
         
-        //glbファイルの読み込み
-
         if (mycar_select == 0)
         {
             const loader = new GLTFLoader();
-            loader.load('static/sample0.glb', function(gltf) {
+            loader.load('static/sample0.glb', function(gltf) { //glbファイルの読み込み
                 model = gltf.scene;
                 model.scale.set(50, 50, 50);
                 car.add(model);
@@ -580,6 +581,7 @@
         line.rotation.x = -Math.PI / 2;
     }
 
+    //ステージ上での車のモデル（CPU）の読み込み
     function rivalCar(){
         for (let i=0; i<10; i++){
             rivalcars.push(new THREE.Group());
@@ -662,8 +664,8 @@
     {
         document.onkeydown = OnKeyDown;
         document.onkeyup = OnKeyUp;
-        moveMycar();
-        moveRivalcar();
+        moveMycar(); //プレイヤーの動作の関数
+        moveRivalcar(); //CPUの動作の関数
         if (mylap<3) bgm.play();
         else {
             bgm.pause();
@@ -674,6 +676,7 @@
         requestAnimationFrame(update);
     }
 
+    //カメラの位置の設定
     function Mycamera()
     {
         let rotationY = car.rotation.y;
@@ -695,7 +698,7 @@
     let movement = {};
     let keydown = false;
     
-
+    //車の操作
     function moveMycar()
     {   
         before_x = car.position.x;
@@ -785,7 +788,7 @@
             for(let i=0; i<10; i++){
                 rival_length = Math.sqrt((rivalcars[i].position.x - car.position.x) ** 2
                                             + (rivalcars[i].position.z - car.position.z) ** 2);
-                if (rival_length < 100)
+                if (rival_length < 100) //CPUと接触したとき
                 {
                     rival_hit = true;
                     car.position.x = before_x;
@@ -797,23 +800,25 @@
         if (car.position.x < course_range[0] || course_range[1] < car.position.x
                 || car.position.z < course_range[2] || course_range[3] < car.position.z)
         {
+            //ステージから落ちた場合，スタートラインに戻す
             fall_mycar();
         }
 
-        
+        //ある中継地点をプレイヤーが通ったとき
         if (bet(car.position.x, check_point[mytoward][0][0], check_point[mytoward][1][0]) &&
             bet(car.position.z, check_point[mytoward][0][2], check_point[mytoward][1][2]))
         {
             if (mytoward == 0){
-                mylap += 1;
+                mylap += 1; //周回数を加算
             }
             
             if (mylap < 3)
             {
-                rank = rival_check[mylap][mytoward].length + 1;
-                mytoward += 1;
-                if (mytoward == check_point.length){
-                    mytoward = 0;
+                rank = rival_check[mylap][mytoward].length + 1; //プレイヤーがいる中継地点を何台のCPUが通ったか検出
+                mytoward += 1; //次の中継地点を目指す
+                
+                if (mytoward == check_point.length){ //すべての中継地点を回った場合
+                    mytoward = 0; //スタートラインの中継地点を目指す（mylapも+=1する）
                 }
             }
 
@@ -916,7 +921,7 @@
             }
 
             if (Math.abs(rivalcars[i].position.x - rival_line[1][next_sector][0])<30 &&
-                Math.abs(rivalcars[i].position.z - rival_line[1][next_sector][2])<30) // rival_line[0]は<20
+                Math.abs(rivalcars[i].position.z - rival_line[1][next_sector][2])<30) 
             {
                 rival_sector[i] += 1
                 if (rival_sector[i] >= rival_line[1].length){
@@ -952,6 +957,7 @@
         }
     }
 
+    //タッチ操作
     const touches = {};
     $('#canvas-2d').on('touchstart', (event)=>{
         
