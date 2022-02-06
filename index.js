@@ -68,6 +68,7 @@ let players = {};
 io.on('connection', function(socket) {
     let player = null;
     socket.on('game-start', (config) => {
+        /*
         player = new Player({
             socketId: socket.id,
             nickname: config.nickname,
@@ -75,6 +76,7 @@ io.on('connection', function(socket) {
         });
         players[player.id] = player;
         //console.log('entry socketId = '+ player.socketId);
+        */
     });
 
     socket.on('disconnect', () => {
