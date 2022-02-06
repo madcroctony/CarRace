@@ -77,21 +77,6 @@ scene.add(light);
 const ambient = new THREE.AmbientLight(0x808080);
 scene.add(ambient);
 
-/*
-const loader = new THREE.FontLoader();
-let font;
-loader.load('helvetiker_bold.typeface.json', function(font_) {
-    font = font_;
-});
-*/
-        
-
-// Helpers
-// scene.add(new THREE.CameraHelper(light.shadow.camera));
-// scene.add(new THREE.GridHelper(200, 50));
-// scene.add(new THREE.AxisHelper(2000));
-// scene.add(new THREE.DirectionalLightHelper(light, 20));
-
 function animate() {
     requestAnimationFrame( animate );
     renderer.render( scene, camera );
@@ -170,9 +155,6 @@ $('#canvas-2d').on('touchmove', (event)=>{
     movement.left = false;
     Array.from(event.touches).forEach((touch) => {
         const startTouch = touches[touch.identifier];
-
-        //console.log("touch.pageY = "+ touch.pageY);
-        //console.log("startTouch.pageY = "+ startTouch.pageY);
         if (-50 <= touch.pageY - startTouch.pageY && touch.pageY - startTouch.pageY <= 50)
         {
             movement.right |= touch.pageX - startTouch.pageX > 30;
@@ -217,9 +199,6 @@ socket.on('state', (players, bullets, walls, bots, teki_bullets) => {
         console.log("id players = "+ socket.id);
         let playerMesh = Meshes[player.id];
         if(!playerMesh){
-            //console.log('create player mesh');
-            //console.log('player.nickname = '+ player.nickname);
-            //console.log('player.kill = '+ player.kill);
             playerMesh = new THREE.Group();
             playerMesh.castShadow = true;
             Meshes[player.id] = playerMesh;
@@ -230,13 +209,6 @@ socket.on('state', (players, bullets, walls, bots, teki_bullets) => {
         playerMesh.rotation.y = - player.angle;
         
         if(!playerMesh.getObjectByName('body')){
-            //console.log('create body mesh');
-            /*
-            mesh = new THREE.Mesh(new THREE.BoxGeometry(player.width, player.depth, player.height), playerMaterial);
-            mesh.castShadow = true;
-            mesh.name = 'body';
-            playerMesh.add(mesh);
-            */
             //glbファイルの読み込み
             const loader = new GLTFLoader();
     
@@ -253,47 +225,6 @@ socket.on('state', (players, bullets, walls, bots, teki_bullets) => {
                 console.error(e);
             });
         }
-
-        /*
-        if(font){
-            if(!playerMesh.getObjectByName('nickname')){
-                console.log('create nickname mesh');
-                mesh = new THREE.Mesh(
-                    new THREE.TextGeometry(player.nickname,
-                        {font: font, size: 10, height: 1}),
-                        nicknameMaterial,
-                );
-                mesh.name = 'nickname';
-                playerMesh.add(mesh);
-
-                mesh.position.set(0, 70, 0);
-                mesh.rotation.y = Math.PI/2;
-            }
-            {
-                let mesh = playerMesh.getObjectByName('health');
-
-                if(mesh && mesh.health !== player.health){
-                    playerMesh.remove(mesh);
-                    mesh.geometry.dispose();
-                    mesh = null;
-                }
-                if(!mesh){
-                    console.log('create health mesh');
-                    mesh = new THREE.Mesh(
-                        new THREE.TextGeometry('*'.repeat(player.health),
-                            {font: font, size: 10, height: 1}),
-                            textMaterial,
-                    );
-                    mesh.name = 'health';
-                    mesh.health = player.health;
-                    playerMesh.add(mesh);
-                }
-                mesh.position.set(0, 50, 0);
-                mesh.rotation.y = Math.PI/2;
-            }
-        }
-        */
-        
         
         if(player.socketId === socket.id){
             // Your player
@@ -320,7 +251,6 @@ socket.on('state', (players, bullets, walls, bots, teki_bullets) => {
     Object.keys(Meshes).forEach((key) => {
         const mesh = Meshes[key];
         if(!mesh.used){
-            //console.log('removing mesh', key);
             scene.remove(mesh);
             mesh.traverse((mesh2) => {
                 if(mesh2.geometry){
