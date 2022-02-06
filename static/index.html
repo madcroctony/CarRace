@@ -589,9 +589,7 @@
 
             if (i == 0 || i == 1){
                 load_rival.load('static/sample4.glb', function(gltf){
-                    //console.log("i: "+ i + "rival_sector: "+ rival_sector[i]);
                     pre_sector = rival_sector[i];
-                    //console.log("rival_line"+ rival_line[pre_sector]);
 
                     model_rival = gltf.scene;
                     model_rival.scale.set(40, 40, 40);
@@ -605,9 +603,7 @@
 
             else if (i == 2 || i== 3){
                 load_rival.load('static/sample3.glb', function(gltf){
-                    //console.log("i: "+ i + "rival_sector: "+ rival_sector[i]);
                     pre_sector = rival_sector[i];
-                    //console.log("rival_line"+ rival_line[pre_sector]);
 
                     model_rival = gltf.scene;
                     model_rival.scale.set(40, 40, 40);
@@ -621,9 +617,7 @@
 
             else if (i==4 || i==5){
                 load_rival.load('static/sample2.glb', function(gltf){
-                    //console.log("i: "+ i + "rival_sector: "+ rival_sector[i]);
                     pre_sector = rival_sector[i];
-                    //console.log("rival_line"+ rival_line[pre_sector]);
 
                     model_rival = gltf.scene;
                     model_rival.scale.set(50, 50, 50);
@@ -637,9 +631,7 @@
 
             else if (i==6 || i==7){
                 load_rival.load('static/sample1.glb', function(gltf){
-                    //console.log("i: "+ i + "rival_sector: "+ rival_sector[i]);
                     pre_sector = rival_sector[i];
-                    //console.log("rival_line"+ rival_line[pre_sector]);
                     
                     model_rival = gltf.scene;
                     model_rival.scale.set(35, 35, 35);
@@ -653,9 +645,7 @@
 
             else {
                 load_rival.load('static/sample0.glb', function(gltf){
-                    //console.log("i: "+ i + "rival_sector: "+ rival_sector[i]);
                     pre_sector = rival_sector[i];
-                    //console.log("rival_line"+ rival_line[pre_sector]);
                     
                     model_rival = gltf.scene;
                     model_rival.scale.set(50, 50, 50);
@@ -799,7 +789,6 @@
                 if (rival_length < 100)
                 {
                     rival_hit = true;
-                    //console.log("rivalcars: "+ i);
                     car.position.x = before_x;
                     car.position.z = before_z;
                 }
@@ -823,7 +812,6 @@
             if (mylap < 3)
             {
                 rank = rival_check[mylap][mytoward].length + 1;
-                //console.log('mytoward = '+ mytoward);
                 mytoward += 1;
                 if (mytoward == check_point.length){
                     mytoward = 0;
@@ -922,14 +910,11 @@
             rivalcars[i].position.z += rival_speed[i] * Math.cos(rivalcars[i].rotation.y);
             pre_sector = rival_sector[i];
             next_sector = rival_sector[i]+1;
-            //console.log(rival_line.length);
         
             if(next_sector >= rival_line[1].length)
             {
                 next_sector = 0;
             }
-            //console.log("i: "+ i + " pre_sector: "+ pre_sector);
-            //console.log(next_sector);
 
             if (Math.abs(rivalcars[i].position.x - rival_line[1][next_sector][0])<30 &&
                 Math.abs(rivalcars[i].position.z - rival_line[1][next_sector][2])<30) // rival_line[0]は<20
@@ -948,8 +933,6 @@
                     rivalcars[i].position.z = rival_line[1][next_sector][2];
                     rivalcars[i].rotation.y = rival_line[1][next_sector][3];
                 }
-                
-                //console.log("rivalcars[i].rotation.y: "+ rivalcars[i].rotation.y);
             }
 
             if (bet(rivalcars[i].position.x, check_point[rival_toward[i]][0][0], check_point[rival_toward[i]][1][0]) &&
@@ -987,8 +970,6 @@
         Array.from(event.touches).forEach((touch) => {
             const startTouch = touches[touch.identifier];
 
-            //console.log("touch.pageY = "+ touch.pageY);
-            //console.log("startTouch.pageY = "+ startTouch.pageY);
             if (touch.pageY - startTouch.pageY < -30 || touch.pageY - startTouch.pageY > 30)
             {
                 isDownKeyDown |= touch.pageY - startTouch.pageY < -30;
@@ -1017,7 +998,6 @@
     });
  
 </script>
- 
 </body>
 </html>
  
