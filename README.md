@@ -1,9 +1,9 @@
 # CarRace
 Node.jsのフレームワークで作成しています。
 
-フォルダを作成し，ターミナル上で
-npm init ➡ npm install express --save ➡ npm install socket.io
-と入力をおこない，プロジェクトの作成しました。
+フォルダを作成し，ターミナル上で<br>
+npm init ➡ npm install express --save ➡ npm install socket.io <br>
+と入力をおこない，プロジェクトの作成しました。<br>
 ステージや車のモデルはBlenderで作成し，<br>
 BGMはOtoLogic（ https://otologic.jp/ ） 様のものを使用させていただきました。<br>
 また，Three.jsについては，Paiza様の開発日誌
