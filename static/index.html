@@ -1,0 +1,1023 @@
+<html>
+ 
+<head>
+    <meta charset="utf-8">
+    <title>version0013</title>
+    
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        #mycanvas{
+            width: 900px;
+            height: 900px;
+        }
+    </style>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+            crossorigin="anonymous">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    
+    <script src="/static/course.js"></script>
+    <script src="/static/walls.js"></script>
+</head>
+<body>
+    <div id="start-screen" style="width: 100%; height: 100%; position: absolute; z-index: 10;">
+        <button id="race_start0" class="btn btn-primary" 
+            style="position: absolute; top: 100px; left: 100px;">Sample0</button>
+        <button id="race_start1" class="btn btn-primary"
+            style="position: absolute; top: 200px; left: 100px;">Sample1</button>
+        <button id="race_start2" class="btn btn-primary"
+            style="position: absolute; top: 300px; left: 100px;">Sample2</button>
+        <button id="race_start3" class="btn btn-primary"
+            style="position: absolute; top: 400px; left: 100px;">Sample3</button>
+        <button id="race_start4" class="btn btn-primary"
+            style="position: absolute; top: 500px; left: 100px;">Sample4</button>
+    </div>
+    
+  <canvas id="canvas-2d" width="1000" height="1000" style="position: absolute; width: 100%; height: 100%; z-index:2;object-fit: contain;"></canvas>
+  <canvas id="canvas-3d" width="1000" height="1000" style="position: absolute; width: 100%; height: 100%; z-index:1;object-fit: contain;"></canvas>
+ 
+<script type="module">
+    import * as THREE from'https://unpkg.com/three@0.126.1/build/three.module.js';
+    import { OrbitControls } from 'https://unpkg.com/three@0.126.1/examples/jsm/controls/OrbitControls.js';
+    import { GLTFLoader } from 'https://unpkg.com/three@0.126.1/examples/jsm/loaders/GLTFLoader.js';
+ 
+    const socket = io();
+    const canvas2d = $('#canvas-2d')[0];
+    const context = canvas2d.getContext('2d');
+    const canvas3d = $('#canvas-3d')[0];
+
+    let isUpKeyDown = false;
+    let isDownKeyDown = false;
+    let isLeftKeyDown = false;
+    let isRightKeyDown = false;
+    let isHeightUp = false;
+    let isHeightDown = false;
+    let isEnter = false;
+    let isVertical_right = false;
+    let isVertical_left = false;
+    let isVertical_up = false;
+    let isVertical_down = false;
+    let wall_touch = false;
+    let rival_hit = false;
+
+    function OnKeyDown(e) {
+        //console.log("e.keyCode = "+e.keyCode);
+        if (e.keyCode == 37) {
+            isLeftKeyDown = true;
+        }
+        if (e.keyCode == 38) { // 上キー
+            isUpKeyDown = true;
+        }
+        if (e.keyCode == 39) {
+            isRightKeyDown = true;
+            //soundStart.pause();
+        }
+        if (e.keyCode == 32) { // スペースキー
+            isDownKeyDown = true;
+        }
+
+        if (e.keyCode == 90){//Zキー
+            isHeightUp = true;
+        }
+        if (e.keyCode == 88){//Xキー
+            isHeightDown = true;
+        }
+
+        if (e.keyCode == 13){//enterキー
+            isEnter = true;
+        }
+
+        if (e.keyCode == 81){//Q
+            isVertical_up = true;
+        }
+
+        if (e.keyCode == 87){//W
+            isVertical_down = true;
+        }
+
+        if (e.keyCode == 69){//E
+            isVertical_right = true;
+        }
+        if (e.keyCode == 82){//R
+            isVertical_left = true;
+        }
+    }
+    function OnKeyUp(e) {
+        if (e.keyCode == 37) {
+            isLeftKeyDown = false;
+        }
+        if (e.keyCode == 39) {
+            isRightKeyDown = false;
+        }
+        if (e.keyCode == 38) {
+            isUpKeyDown = false;
+        }
+        if (e.keyCode == 32) {
+            isDownKeyDown = false;
+        }
+        if (e.keyCode == 90){
+            isHeightUp = false;
+        }
+        if (e.keyCode == 88){
+            isHeightDown = false;
+        }
+        if (e.keyCode == 13){//enterキー
+            isEnter = false;
+        }
+        if (e.keyCode == 81){//Q
+            isVertical_up = false;
+        }
+
+        if (e.keyCode == 87){//W
+            isVertical_down = false;
+        }
+
+        if (e.keyCode == 69){//E
+            isVertical_right = false;
+        }
+        if (e.keyCode == 82){//R
+            isVertical_left = false;
+        }
+    }
+
+    const renderer = new THREE.WebGLRenderer({canvas: canvas3d});
+    renderer.setClearColor('black');
+    renderer.shadowMap.enabled = false;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera( 100, 1, 0.1, 10000 );
+
+    // Light
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(-100, 300, -100);
+    light.castShadow = true;
+    light.shadow.camera.left = -2000;
+    light.shadow.camera.right = 2000;
+    light.shadow.camera.top = 2000;
+    light.shadow.camera.bottom = -2000;
+    light.shadow.camera.far = 2000;
+    light.shadow.mapSize.width = 2048;
+    light.shadow.mapSize.height = 2048;
+    scene.add(light);
+    const ambient = new THREE.AmbientLight(0x808080);
+    scene.add(ambient);
+
+    window.addEventListener('load', init);
+
+    let sample0;
+    let sample0_model;
+    let sample0_loader;
+
+    let sample1;
+    let sample1_model;
+    let sample1_loader;
+
+    let sample2;
+    let sample2_model;
+    let sample2_loader;
+
+    let sample3;
+    let sample3_model;
+    let sample3_loader;
+
+    let sample4;
+    let sample4_model;
+    let sample4_loader;
+
+    function init(){
+        sample0 = new THREE.Group();
+        scene.add(sample0);
+
+        sample0_loader = new GLTFLoader();
+        sample0_loader.load('static/sample0.glb', function(gltf){
+            sample0_model = gltf.scene;
+            sample0_model.scale.set(20, 20, 20);
+            sample0.add(sample0_model);
+            sample0.position.x = 0;
+            sample0.position.y = 0;
+            sample0.position.z = 0;
+            sample0.rotation.y = -Math.PI/2;
+        });
+
+        sample1 = new THREE.Group();
+        scene.add(sample1);
+
+        sample1_loader = new GLTFLoader();
+        sample1_loader.load('static/sample1.glb', function(gltf){
+            sample1_model = gltf.scene;
+            sample1_model.scale.set(15, 15, 15);
+            sample1.add(sample1_model);
+            sample1.position.x = -80;
+            sample1.position.y = 0;
+            sample1.position.z = 0;
+            sample1.rotation.y = -Math.PI/2;
+        });
+
+        sample2 = new THREE.Group();
+        scene.add(sample2);
+
+        sample2_loader = new GLTFLoader();
+        sample2_loader.load('static/sample2.glb', function(gltf){
+            sample2_model = gltf.scene;
+            sample2_model.scale.set(15, 15, 15);
+            sample2.add(sample2_model);
+            sample2.position.x = 80;
+            sample2.position.y = 0;
+            sample2.position.z = 0;
+            sample2.rotation.y = -Math.PI/2;
+        });
+
+        sample3 = new THREE.Group();
+        scene.add(sample3);
+
+        sample3_loader = new GLTFLoader();
+        sample3_loader.load('static/sample3.glb', function(gltf){
+            sample3_model = gltf.scene;
+            sample3_model.scale.set(15, 15, 15);
+            sample3.add(sample3_model);
+            sample3.position.x = -40;
+            sample3.position.y = 50;
+            sample3.position.z = -50;
+            sample3.rotation.y = -Math.PI/2;
+        });
+
+        sample4 = new THREE.Group();
+        scene.add(sample4);
+
+        sample4_loader = new GLTFLoader();
+        sample4_loader.load('static/sample4.glb', function(gltf){
+            sample4_model = gltf.scene;
+            sample4_model.scale.set(15, 15, 15);
+            sample4.add(sample4_model);
+            sample4.position.x = 40;
+            sample4.position.y = 50;
+            sample4.position.z = -50;
+            sample4.rotation.y = -Math.PI/2;
+        });
+
+        camera.position.x = 0;
+        camera.position.y = 50;
+        camera.position.z = 100;
+        camera.rotation.set(0, 0, 0);
+        renderer.render( scene, camera );
+        setInterval(show, 1000/60);
+    }
+
+    function show(){
+        sample0.rotation.y += 0.01;
+        sample1.rotation.y += 0.01;
+        sample2.rotation.y += 0.01;
+        sample3.rotation.y += 0.01;
+        sample4.rotation.y += 0.01;
+        renderer.render( scene, camera );
+        context.fillStyle = "orange";
+        context.font = '30px Bold Arial';
+        context.fillText('Sample0', 500, 850);
+        context.fillText('Sample1', 200, 850);
+        context.fillText('Sample2', 800, 850);
+        context.fillText('Sample3', 300, 550);
+        context.fillText('Sample4', 600, 550);
+    }
+
+
+    function stage(){
+        // Floor
+        const floorGeometry = new THREE.PlaneGeometry(5000, 5000, 1, 1);
+        const floorMaterial = new THREE.MeshLambertMaterial({color : 'orange'});
+        const floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
+
+        floorMesh.position.set(5000/2, -1, 5000/2);
+        floorMesh.receiveShadow = true;
+        floorMesh.rotation.x = - Math.PI / 2; 
+        scene.add(floorMesh);
+
+        let floor;
+        let floor_model;
+        floor = new THREE.Group();
+        scene.add(floor);
+
+        let line;
+        let line_geometry;
+        let line_mesh;
+
+        //glbファイルの読み込み
+        const floor_loader = new GLTFLoader();
+        floor_loader.load('static/floor.glb', function(gltf) {
+            floor_model = gltf.scene;
+            floor.add(floor_model);
+            floor.position.x = 5200/2;
+            floor.position.y = -1;
+            floor.position.z = 5200/2;
+        }, undefined, function(e) {
+            console.error(e);
+        });
+
+        let course;
+        let course_model;
+
+        course = new THREE.Group();
+        scene.add(course);
+            
+        //glbファイルの読み込み
+        const course_loader = new GLTFLoader();
+        course_loader.load('static/course.glb', function(gltf) {
+            course_model = gltf.scene;
+            course.add(course_model);
+            course.position.x = 5000/2;
+            course.position.y = 0;
+            course.position.z = 5000/2;
+        }, undefined, function(e) {
+            console.error(e);
+        });
+
+        let geometry;
+        let material;
+        let cube;
+        
+        for (let i=0; i<wall_zone.length; i++)
+        {
+            geometry = new THREE.BoxGeometry(wall_zone[i][2], 100, wall_zone[i][3]);
+            material = new THREE.MeshBasicMaterial( {color: 0x0000ff} );
+            cube = new THREE.Mesh(geometry, material);
+            scene.add(cube);
+            cube.position.x = wall_zone[i][0];
+            cube.position.y = 100/2;
+            cube.position.z = wall_zone[i][1];
+        }
+
+        camera.position.set(1000, 300, 1000);
+        camera.lookAt(floorMesh.position);
+    }
+
+    function animate() {
+      requestAnimationFrame( animate );
+      renderer.render( scene, camera );
+    }
+
+
+    //mycar
+    let x = 500;
+    let y = 0;
+    let z = 500;
+    let speed = 0;
+    let angle = 0;
+    let car;
+    let model;
+    let camera_front = false;
+    let before_x;
+    let before_z;
+    let rival_length;
+    let mylap = 0;
+    let mylap2; //表示用
+    let mytoward = 1;
+    let rank = 11;
+
+    let line;
+    let line_geometry;
+    let line_mesh;
+
+    //rivalcar
+    let rivalcars = [];
+    let load_rival;
+    let model_rival;
+    let rival_speed = [25.0, 25.0, 25.0, 25.0, 26.0, 26.0, 26.0, 26.0, 26.0, 26.0];
+    let rival_sector = [1, 3, 6, 8, 
+                        10, 12, 14, 16, 21, 24];
+    let rival_lap = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let rival_toward = [3, 4, 5, 5, 6, 7, 7, 8, 10, 11];
+
+    let rival_check = [];
+    for (let i=0; i<3; i++){
+        rival_check.push([]);
+        for (let j=0; j<check_point.length; j++){
+            rival_check[i].push([]);
+        }
+    }
+
+    rival_check[0][0] = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+    rival_check[0][1] = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+    rival_check[0][2] = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+    rival_check[0][3] = [1, 1, 1, 1, 1, 1, 1, 1, 1];
+    rival_check[0][4] = [1, 1, 1, 1, 1, 1, 1, 1];
+    rival_check[0][5] = [1, 1, 1, 1, 1, 1];
+    rival_check[0][6] = [1, 1, 1, 1, 1];
+    rival_check[0][7] = [1, 1, 1];
+    rival_check[0][8] = [1, 1];
+    rival_check[0][9] = [1, 1];
+    rival_check[0][10] = [1];
+
+    let pre_sector;
+    let next_sector;
+    
+    animate();
+
+    let bgm = new Audio("static/NES-Shooter-C04-1(Stage3).mp3");
+    let bgm2 = new Audio("static/NES-Shooter-C07-1(Clear1).mp3");
+
+    let mycar_select;
+
+    $("#race_start0").on('click', select0);
+    $("#race_start1").on('click', select1);
+    $("#race_start2").on('click', select2);
+    $("#race_start3").on('click', select3);
+    $("#race_start4").on('click', select4);
+    
+    function select0(){
+        mycar_select = 0;
+        gameStart();
+    }
+
+    function select1(){
+        mycar_select = 1;
+        gameStart();
+    }
+
+    function select2(){
+        mycar_select = 2;
+        gameStart();
+    }
+
+    function select3(){
+        mycar_select = 3;
+        gameStart();
+    }
+
+    function select4(){
+        mycar_select = 4;
+        gameStart();
+    }
+
+    function gameStart()
+    {
+        $("#race_start0").hide();
+        $("#race_start1").hide();
+        $("#race_start2").hide();
+        $("#race_start3").hide();
+        $("#race_start4").hide();
+        $("#start-screen").hide();
+
+        const nickname = Math.floor(Math.random()*1000);
+        socket.emit('game-start', {nickname: nickname});
+
+        scene.remove(sample0);
+        scene.remove(sample1);
+        scene.remove(sample2);
+        scene.remove(sample3);
+        scene.remove(sample4);
+
+        stage();
+        initMycar();
+        rivalCar();
+
+        camera.position.set(
+            x - 100 * Math.cos(angle),
+            100,
+            z - 150 * Math.sin(angle)
+        );
+        camera.rotation.set(0, - angle - Math.PI/2, 0);
+        renderer.render(scene, camera);
+        update();
+    }
+
+    function initMycar()
+    {
+        car = new THREE.Group();
+        scene.add(car);
+        
+        //glbファイルの読み込み
+
+        if (mycar_select == 0)
+        {
+            const loader = new GLTFLoader();
+            loader.load('static/sample0.glb', function(gltf) {
+                model = gltf.scene;
+                model.scale.set(50, 50, 50);
+                car.add(model);
+                car.position.x = rival_line[0][0][0];
+                car.position.y = rival_line[0][0][1];
+                car.position.z = rival_line[0][0][2];
+                car.rotation.y = rival_line[0][0][3];
+            }, undefined, function(e) {
+                console.error(e);
+            });
+        }
+
+        else if (mycar_select == 1)
+        {
+            const loader = new GLTFLoader();
+            loader.load('static/sample1.glb', function(gltf) {
+                model = gltf.scene;
+                model.scale.set(35, 35, 35);
+                car.add(model);
+                car.position.x = rival_line[0][0][0];
+                car.position.y = rival_line[0][0][1];
+                car.position.z = rival_line[0][0][2];
+                car.rotation.y = rival_line[0][0][3];
+            }, undefined, function(e) {
+                console.error(e);
+            });
+        }
+
+        else if (mycar_select == 2)
+        {
+            const loader = new GLTFLoader();
+            loader.load('static/sample2.glb', function(gltf) {
+                model = gltf.scene;
+                model.scale.set(50, 50, 50);
+                car.add(model);
+                car.position.x = rival_line[0][0][0];
+                car.position.y = rival_line[0][0][1];
+                car.position.z = rival_line[0][0][2];
+                car.rotation.y = rival_line[0][0][3];
+            }, undefined, function(e) {
+                console.error(e);
+            });
+        }
+
+        else if (mycar_select == 3)
+        {
+            const loader = new GLTFLoader();
+            loader.load('static/sample3.glb', function(gltf) {
+                model = gltf.scene;
+                model.scale.set(40, 40, 40);
+                car.add(model);
+                car.position.x = rival_line[0][0][0];
+                car.position.y = rival_line[0][0][1];
+                car.position.z = rival_line[0][0][2];
+                car.rotation.y = rival_line[0][0][3];
+            }, undefined, function(e) {
+                console.error(e);
+            });
+        }
+
+        else if (mycar_select == 4)
+        {
+            const loader = new GLTFLoader();
+            loader.load('static/sample4.glb', function(gltf) {
+                model = gltf.scene;
+                model.scale.set(40, 40, 40);
+                car.add(model);
+                car.position.x = rival_line[0][0][0];
+                car.position.y = rival_line[0][0][1];
+                car.position.z = rival_line[0][0][2];
+                car.rotation.y = rival_line[0][0][3];
+            }, undefined, function(e) {
+                console.error(e);
+            });
+        }
+
+        line_geometry = new THREE.PlaneGeometry(100, 
+            Math.abs(check_point[mytoward][0][2] - check_point[mytoward][1][2]), 1, 1);
+        line_mesh = new THREE.MeshBasicMaterial( {color: 0xff0000} );
+        line = new THREE.Mesh(line_geometry, line_mesh);
+        scene.add(line);
+        line.position.x = (check_point[mytoward][0][0] + check_point[mytoward][1][0]) / 2;
+        line.position.y = 1;
+        line.position.z = (check_point[mytoward][0][2] + check_point[mytoward][1][2]) / 2;
+        line.rotation.x = -Math.PI / 2;
+    }
+
+    function rivalCar(){
+        for (let i=0; i<10; i++){
+            rivalcars.push(new THREE.Group());
+            scene.add(rivalcars[i]);
+            load_rival = new GLTFLoader();
+
+            if (i == 0 || i == 1){
+                load_rival.load('static/sample4.glb', function(gltf){
+                    //console.log("i: "+ i + "rival_sector: "+ rival_sector[i]);
+                    pre_sector = rival_sector[i];
+                    //console.log("rival_line"+ rival_line[pre_sector]);
+
+                    model_rival = gltf.scene;
+                    model_rival.scale.set(40, 40, 40);
+                    rivalcars[i].add(model_rival);
+                    rivalcars[i].position.x = rival_line[1][pre_sector][0];
+                    rivalcars[i].position.y = rival_line[1][pre_sector][1];
+                    rivalcars[i].position.z = rival_line[1][pre_sector][2];
+                    rivalcars[i].rotation.y = rival_line[1][pre_sector][3];
+                });
+            }
+
+            else if (i == 2 || i== 3){
+                load_rival.load('static/sample3.glb', function(gltf){
+                    //console.log("i: "+ i + "rival_sector: "+ rival_sector[i]);
+                    pre_sector = rival_sector[i];
+                    //console.log("rival_line"+ rival_line[pre_sector]);
+
+                    model_rival = gltf.scene;
+                    model_rival.scale.set(40, 40, 40);
+                    rivalcars[i].add(model_rival);
+                    rivalcars[i].position.x = rival_line[1][pre_sector][0];
+                    rivalcars[i].position.y = rival_line[1][pre_sector][1];
+                    rivalcars[i].position.z = rival_line[1][pre_sector][2];
+                    rivalcars[i].rotation.y = rival_line[1][pre_sector][3];
+                });
+            }
+
+            else if (i==4 || i==5){
+                load_rival.load('static/sample2.glb', function(gltf){
+                    //console.log("i: "+ i + "rival_sector: "+ rival_sector[i]);
+                    pre_sector = rival_sector[i];
+                    //console.log("rival_line"+ rival_line[pre_sector]);
+
+                    model_rival = gltf.scene;
+                    model_rival.scale.set(50, 50, 50);
+                    rivalcars[i].add(model_rival);
+                    rivalcars[i].position.x = rival_line[1][pre_sector][0];
+                    rivalcars[i].position.y = rival_line[1][pre_sector][1];
+                    rivalcars[i].position.z = rival_line[1][pre_sector][2];
+                    rivalcars[i].rotation.y = rival_line[1][pre_sector][3];
+                });
+            }
+
+            else if (i==6 || i==7){
+                load_rival.load('static/sample1.glb', function(gltf){
+                    //console.log("i: "+ i + "rival_sector: "+ rival_sector[i]);
+                    pre_sector = rival_sector[i];
+                    //console.log("rival_line"+ rival_line[pre_sector]);
+                    
+                    model_rival = gltf.scene;
+                    model_rival.scale.set(35, 35, 35);
+                    rivalcars[i].add(model_rival);
+                    rivalcars[i].position.x = rival_line[1][pre_sector][0];
+                    rivalcars[i].position.y = rival_line[1][pre_sector][1];
+                    rivalcars[i].position.z = rival_line[1][pre_sector][2];
+                    rivalcars[i].rotation.y = rival_line[1][pre_sector][3];
+                });
+            }
+
+            else {
+                load_rival.load('static/sample0.glb', function(gltf){
+                    //console.log("i: "+ i + "rival_sector: "+ rival_sector[i]);
+                    pre_sector = rival_sector[i];
+                    //console.log("rival_line"+ rival_line[pre_sector]);
+                    
+                    model_rival = gltf.scene;
+                    model_rival.scale.set(50, 50, 50);
+                    rivalcars[i].add(model_rival);
+                    rivalcars[i].position.x = rival_line[1][pre_sector][0];
+                    rivalcars[i].position.y = rival_line[1][pre_sector][1];
+                    rivalcars[i].position.z = rival_line[1][pre_sector][2];
+                    rivalcars[i].rotation.y = rival_line[1][pre_sector][3];
+                });
+            }
+        }
+    }
+
+    function update()
+    {
+        document.onkeydown = OnKeyDown;
+        document.onkeyup = OnKeyUp;
+        moveMycar();
+        moveRivalcar();
+        if (mylap<3) bgm.play();
+        else {
+            bgm.pause();
+            bgm2.play();
+        }
+
+        renderer.render(scene, camera);
+        requestAnimationFrame(update);
+    }
+
+    function Mycamera()
+    {
+        let rotationY = car.rotation.y;
+
+        if (!camera_front){
+            camera.position.x = car.position.x - 100 * Math.sin(rotationY);
+            camera.position.y = 80;
+            camera.position.z = car.position.z - 100 * Math.cos(rotationY);
+            camera.lookAt(new THREE.Vector3(car.position.x, car.position.y+1, car.position.z));
+        }
+        else{
+            camera.position.x = car.position.x + Math.sin(rotationY);
+            camera.position.y = 50;
+            camera.position.z = car.position.z + Math.cos(rotationY);
+            camera.lookAt(new THREE.Vector3(car.position.x + 100 * Math.sin(rotationY), car.position.y+1, car.position.z + 100 * Math.cos(rotationY)));
+        }
+    }
+
+    let movement = {};
+    let keydown = false;
+    
+
+    function moveMycar()
+    {   
+        before_x = car.position.x;
+        before_z = car.position.z;
+
+        if (isLeftKeyDown)
+        {
+            if (isDownKeyDown){
+                car.rotation.y += 0.050;
+            }
+            else{
+                car.rotation.y += 0.020;
+            }
+        }
+        if (isRightKeyDown)
+        {
+            if (isDownKeyDown){
+                car.rotation.y -= 0.050;
+            }
+            else{
+                car.rotation.y -= 0.020;
+            }
+        }
+        if (isUpKeyDown && speed < 28)
+        {
+            speed += 0.2;
+        }
+        if (isDownKeyDown) {
+            speed -= 0.3;
+            if (speed < 0)
+                speed = 0;
+        }
+
+        if (isHeightDown){
+            camera_front = true;
+        }
+        if (isHeightUp){
+            camera_front = false;
+        }
+        if(isVertical_up)
+        {
+            car.rotation.y = Math.PI/2;
+        }
+        if(isVertical_down)
+        {
+            car.rotation.y = 3 * Math.PI/2;
+        }
+        if(isVertical_right)
+        {
+            car.rotation.y = 0;
+        }
+        if(isVertical_left)
+        {
+            car.rotation.y = Math.PI;
+        }
+        if (isEnter){
+            console.log("["+ car.position.x + ", "+ car.position.y+ ", "+ 
+                car.position.z+ ", "+ car.rotation.y+ "]"+",");
+        }
+
+        car.position.x += speed * Math.sin(car.rotation.y);
+        car.position.y = 0;
+        car.position.z += speed * Math.cos(car.rotation.y);
+        car.rotation.x = 0;
+        car.rotation.z = 0;
+
+        
+        wall_touch = false;
+        rival_hit = false;
+        
+        for (let i=0; i<wall_zone.length; i++){
+            if(wall_zone[i][4]<= car.position.x
+                && car.position.x <= wall_zone[i][5])
+            {
+                if (wall_zone[i][6] <= car.position.z
+                    && car.position.z <= wall_zone[i][7])
+                {
+                    wall_touch = true;
+                    car.position.x = before_x;
+                    car.position.z = before_z;
+                    break;
+                }
+            }
+        }
+
+        if (!wall_touch){
+            for(let i=0; i<10; i++){
+                rival_length = Math.sqrt((rivalcars[i].position.x - car.position.x) ** 2
+                                            + (rivalcars[i].position.z - car.position.z) ** 2);
+                if (rival_length < 100)
+                {
+                    rival_hit = true;
+                    //console.log("rivalcars: "+ i);
+                    car.position.x = before_x;
+                    car.position.z = before_z;
+                }
+            }
+        }
+
+        if (car.position.x < course_range[0] || course_range[1] < car.position.x
+                || car.position.z < course_range[2] || course_range[3] < car.position.z)
+        {
+            fall_mycar();
+        }
+
+        
+        if (bet(car.position.x, check_point[mytoward][0][0], check_point[mytoward][1][0]) &&
+            bet(car.position.z, check_point[mytoward][0][2], check_point[mytoward][1][2]))
+        {
+            if (mytoward == 0){
+                mylap += 1;
+            }
+            
+            if (mylap < 3)
+            {
+                rank = rival_check[mylap][mytoward].length + 1;
+                //console.log('mytoward = '+ mytoward);
+                mytoward += 1;
+                if (mytoward == check_point.length){
+                    mytoward = 0;
+                }
+            }
+
+            scene.remove(line);
+
+            if (mylap < 3)
+            {
+                if (check_point[mytoward][0][0] == check_point[mytoward][1][0])
+                {
+                    line_geometry = new THREE.PlaneGeometry(100, 
+                        Math.abs(check_point[mytoward][0][2] - check_point[mytoward][1][2]), 1, 1);
+                    line_mesh = new THREE.MeshBasicMaterial( {color: 0xff0000} );
+                    line = new THREE.Mesh(line_geometry, line_mesh);
+                    scene.add(line);
+                    line.position.x = (check_point[mytoward][0][0] + check_point[mytoward][1][0]) / 2;
+                    line.position.y = 1;
+                    line.position.z = (check_point[mytoward][0][2] + check_point[mytoward][1][2]) / 2;
+                    line.rotation.x = -Math.PI / 2;
+                }
+
+                else{
+                    line_geometry = new THREE.PlaneGeometry(Math.abs(check_point[mytoward][0][0] - check_point[mytoward][1][0]), 
+                        100, 1, 1);
+                    line_mesh = new THREE.MeshBasicMaterial( {color: 0xff0000} );
+                    line = new THREE.Mesh(line_geometry, line_mesh);
+                    scene.add(line);
+                    line.position.x = (check_point[mytoward][0][0] + check_point[mytoward][1][0]) / 2;
+                    line.position.y = 1;
+                    line.position.z = (check_point[mytoward][0][2] + check_point[mytoward][1][2]) / 2;
+                    line.rotation.x = -Math.PI / 2;
+                }
+            }
+
+        }
+        mylap2 = mylap + 1;
+        //スクリーンに順位，ラップ数表示
+        context.clearRect(0, 0, canvas2d.width, canvas2d.height);
+        context.fillStyle = "orange";
+        context.font = '30px Bold Arial';
+        context.fillText('Position: '+ rank, 20, 40);
+        if (mylap < 3){
+            context.fillText('LAP: '+ mylap2 +'/3' , 20, 80);
+            context.fillText("使用した音素材：OtoLogic(https://otologic.jp)", 20, 110);
+        }
+        else{
+            context.fillText('finish', 20, 80);
+            context.fillText('終了しましたが，自由に走れます', 20, 110);
+            context.fillText("使用した音素材：OtoLogic(https://otologic.jp)", 20, 140);
+        }
+        context.fillStyle = "rgb(0, 0, 0)";
+        context.font = '30px Bold Arial';
+        context.fillText("↑：アクセル，→：右，←：左，スペースキー：ブレーキ", 20, 970);
+
+        Mycamera();
+    }
+
+    function bet(pos, a, b){
+        if (a<=b){
+            if (a-100 <= pos && pos<=b+100){
+                return true;
+            }
+        }
+
+        else{
+            if (b-100 <= pos && pos<=a+100){
+                return true;
+            }
+        }
+    }
+
+    function fall_mycar(){
+        while (true){
+            car.position.z -= 10;
+            if (car.position.z < -10000){
+                speed = 0;
+                car.position.x = rival_line[0][0][0];
+                car.position.y = rival_line[0][0][1];
+                car.position.z = rival_line[0][0][2];
+                car.rotation.y = rival_line[0][0][3];
+                before_x = car.position.x;
+                before_z = car.position.z;
+                break;
+            }
+        }
+    }
+
+    function moveRivalcar()
+    {
+        for (let i=0; i<10; i++)
+        {
+            rivalcars[i].position.x += rival_speed[i] * Math.sin(rivalcars[i].rotation.y);
+            rivalcars[i].position.y = 0;
+            rivalcars[i].position.z += rival_speed[i] * Math.cos(rivalcars[i].rotation.y);
+            pre_sector = rival_sector[i];
+            next_sector = rival_sector[i]+1;
+            //console.log(rival_line.length);
+        
+            if(next_sector >= rival_line[1].length)
+            {
+                next_sector = 0;
+            }
+            //console.log("i: "+ i + " pre_sector: "+ pre_sector);
+            //console.log(next_sector);
+
+            if (Math.abs(rivalcars[i].position.x - rival_line[1][next_sector][0])<30 &&
+                Math.abs(rivalcars[i].position.z - rival_line[1][next_sector][2])<30) // rival_line[0]は<20
+            {
+                rival_sector[i] += 1
+                if (rival_sector[i] >= rival_line[1].length){
+                    rival_sector[i] = 0;
+                    rivalcars[i].position.x = rival_line[1][0][0];
+                    rivalcars[i].position.y = rival_line[1][0][1];
+                    rivalcars[i].position.z = rival_line[1][0][2];
+                    rivalcars[i].rotation.y = rival_line[1][0][3];
+                }
+                else{
+                    rivalcars[i].position.x = rival_line[1][next_sector][0];
+                    rivalcars[i].position.y = rival_line[1][next_sector][1];
+                    rivalcars[i].position.z = rival_line[1][next_sector][2];
+                    rivalcars[i].rotation.y = rival_line[1][next_sector][3];
+                }
+                
+                //console.log("rivalcars[i].rotation.y: "+ rivalcars[i].rotation.y);
+            }
+
+            if (bet(rivalcars[i].position.x, check_point[rival_toward[i]][0][0], check_point[rival_toward[i]][1][0]) &&
+                bet(rivalcars[i].position.z, check_point[rival_toward[i]][0][2], check_point[rival_toward[i]][1][2]))
+            {
+                if (rival_toward[i] == 0){
+                    rival_lap[i] += 1;
+                }
+
+                if (rival_lap[i] < 3) {
+                    rival_check[rival_lap[i]][rival_toward[i]].push(1);
+                    rival_toward[i] += 1;
+                    if (rival_toward[i] == check_point.length){
+                        rival_toward[i] = 0;
+                    }
+                }
+            }
+        }
+    }
+
+    const touches = {};
+    $('#canvas-2d').on('touchstart', (event)=>{
+        
+        Array.from(event.changedTouches).forEach((touch) => {
+            touches[touch.identifier] = {pageX: touch.pageX, pageY: touch.pageY};
+        });
+        event.preventDefault();
+    });
+    $('#canvas-2d').on('touchmove', (event)=>{
+        isUpKeyDown = false;
+        isDownKeyDown = false;
+        isLeftKeyDown = false;
+        isRightKeyDown = false;
+
+        Array.from(event.touches).forEach((touch) => {
+            const startTouch = touches[touch.identifier];
+
+            //console.log("touch.pageY = "+ touch.pageY);
+            //console.log("startTouch.pageY = "+ startTouch.pageY);
+            if (touch.pageY - startTouch.pageY < -30 || touch.pageY - startTouch.pageY > 30)
+            {
+                isDownKeyDown |= touch.pageY - startTouch.pageY < -30;
+                isUpKeyDown |= touch.pageY - startTouch.pageY > 30
+            }
+
+            if (touch.pageX - startTouch.pageX < -30 || touch.pageX - startTouch.pageX > 30)
+            {
+                isRightKeyDown |= touch.pageX - startTouch.pageX > 30;
+                isLeftKeyDown |= touch.pageX - startTouch.pageX < -30;
+            }
+            
+        });
+        socket.emit('movement', movement);
+        event.preventDefault();
+    });
+    $('#canvas-2d').on('touchend', (event)=>{
+        Array.from(event.changedTouches).forEach((touch) => {
+            delete touches[touch.identifier];
+        });
+        event.preventDefault();
+    });
+
+    socket.on('dead', () => {
+        $("#start-screen").show();
+    });
+ 
+</script>
+ 
+</body>
+</html>
+ 
